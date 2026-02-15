@@ -3,7 +3,7 @@ package com.adibarra.enchanttweaker.mixin.server.capmod;
 import com.adibarra.enchanttweaker.ETMixinPlugin;
 import com.adibarra.utils.ADMath;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import net.minecraft.enchantment.DamageEnchantment;
+import net.minecraft.enchantment.effect.entity.DamageEntityEnchantmentEffect;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
  * @description Modify enchantment level cap.
  * @environment Server
  */
-@Mixin(value=DamageEnchantment.class)
+@Mixin(value=DamageEntityEnchantmentEffect.class)
 public abstract class DamageEnchantMixin {
 
     @Shadow @Final

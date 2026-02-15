@@ -1,63 +1,62 @@
 package com.adibarra.enchanttweaker.mixin.server.capmod;
 
-import com.adibarra.enchanttweaker.ETMixinPlugin;
-import com.adibarra.utils.ADMath;
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import net.minecraft.enchantment.*;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
 
-/**
- * @description Modify enchantment level cap.
- * @environment Server
- */
-@Mixin(value={
-    DepthStriderEnchantment.class, EfficiencyEnchantment.class,  FireAspectEnchantment.class,
-    FrostWalkerEnchantment.class,  ImpalingEnchantment.class,    KnockbackEnchantment.class,
-    LoyaltyEnchantment.class,      LureEnchantment.class,        PiercingEnchantment.class,
-    PowerEnchantment.class,        PunchEnchantment.class,       QuickChargeEnchantment.class,
-    RespirationEnchantment.class,  RiptideEnchantment.class,     SoulSpeedEnchantment.class,
-    SweepingEnchantment.class,     SwiftSneakEnchantment.class,  ThornsEnchantment.class,
-    UnbreakingEnchantment.class
-})
-public abstract class GenericEnchantMixin {
+@Mixin(Enchantment.class)
+public class GenericEnchantMixin {
 
-    @Unique
-    private final static Map<Class<?>, String> ENCHANTS = new HashMap<>();
+    private static final Map<String, String> ENCHANTS = new HashMap<>();
 
     static {
-        ENCHANTS.put(ChannelingEnchantment.class,     "channeling");
-        ENCHANTS.put(DepthStriderEnchantment.class,   "depth_strider");
-        ENCHANTS.put(EfficiencyEnchantment.class,     "efficiency");
-        ENCHANTS.put(FireAspectEnchantment.class,     "fire_aspect");
-        ENCHANTS.put(FrostWalkerEnchantment.class,    "frost_walker");
-        ENCHANTS.put(ImpalingEnchantment.class,       "impaling");
-        ENCHANTS.put(KnockbackEnchantment.class,      "knockback");
-        ENCHANTS.put(LoyaltyEnchantment.class,        "loyalty");
-        ENCHANTS.put(LureEnchantment.class,           "lure");
-        ENCHANTS.put(PiercingEnchantment.class,       "piercing");
-        ENCHANTS.put(PowerEnchantment.class,          "power");
-        ENCHANTS.put(PunchEnchantment.class,          "punch");
-        ENCHANTS.put(QuickChargeEnchantment.class,    "quick_charge");
-        ENCHANTS.put(RespirationEnchantment.class,    "respiration");
-        ENCHANTS.put(RiptideEnchantment.class,        "riptide");
-        ENCHANTS.put(SoulSpeedEnchantment.class,      "soul_speed");
-        ENCHANTS.put(SweepingEnchantment.class,       "sweeping_edge");
-        ENCHANTS.put(SwiftSneakEnchantment.class,     "swift_sneak");
-        ENCHANTS.put(ThornsEnchantment.class,         "thorns");
-        ENCHANTS.put(UnbreakingEnchantment.class,     "unbreaking");
+        ENCHANTS.put("channeling", "channeling");
+        ENCHANTS.put("depth_strider", "depth_strider");
+        ENCHANTS.put("efficiency", "efficiency");
+        ENCHANTS.put("fire_aspect", "fire_aspect");
+        ENCHANTS.put("frost_walker", "frost_walker");
+        ENCHANTS.put("impaling", "impaling");
+        ENCHANTS.put("knockback", "knockback");
+        ENCHANTS.put("loyalty", "loyalty");
+        ENCHANTS.put("lure", "lure");
+        ENCHANTS.put("piercing", "piercing");
+        ENCHANTS.put("power", "power");
+        ENCHANTS.put("punch", "punch");
+        ENCHANTS.put("quick_charge", "quick_charge");
+        ENCHANTS.put("respiration", "respiration");
+        ENCHANTS.put("riptide", "riptide");
+        ENCHANTS.put("soul_speed", "soul_speed");
+        ENCHANTS.put("sweeping_edge", "sweeping_edge");
+        ENCHANTS.put("swift_sneak", "swift_sneak");
+        ENCHANTS.put("thorns", "thorns");
+        ENCHANTS.put("unbreaking", "unbreaking");
     }
 
+    /**
+     * @author Adibarra
+     * @description Modifiziert die Akzeptanz von Verzauberungskombinationen.
+     * In 1.21.11 akzeptiert canAccept ein RegistryEntry anstelle einer Enchantment-Instanz.
+     */
     @ModifyReturnValue(
-        method="getMaxLevel()I",
-        at=@At("RETURN"))
-    private int enchanttweaker$genericEnchant$modifyMaxLevel(int orig) {
-        int lvlCap = ETMixinPlugin.getConfig().getOrDefault(ENCHANTS.get(this.getClass()), orig);
-        if (lvlCap < 0) return orig;
-        return ADMath.clamp(lvlCap, 0, 255);
+        method = "canAccept(Lnet/minecraft/registry/entry/RegistryEntry;)Z",
+        at = @At("RETURN")
+    )
+    private boolean enchanttweaker$generic$modifyAccept(boolean orig, RegistryEntry<Enchantment> other) {
+        return other.getKeyOrValue().map(
+            key -> {
+                String path = key.getValue().getPath();
+
+                if (ENCHANTS.containsKey(path)) {
+                    return false;
+                }
+                return orig;
+            },
+            value -> orig
+        );
     }
 }

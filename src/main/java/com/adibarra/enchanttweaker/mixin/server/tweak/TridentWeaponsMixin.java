@@ -1,36 +1,30 @@
 package com.adibarra.enchanttweaker.mixin.server.tweak;
 
-import net.minecraft.enchantment.DamageEnchantment;
 import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.TridentItem;
+import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 
-/**
- * @description Allow tridents to be enchanted with fire aspect, knockback, and looting.
- * @environment Server
- */
-@Mixin(value=Enchantment.class)
+@Mixin(Enchantment.class)
 public abstract class TridentWeaponsMixin {
 
-    @Inject(
-        method="isAcceptableItem(Lnet/minecraft/item/ItemStack;)Z",
-        at=@At("HEAD"),
-        cancellable=true)
-    private void enchanttweaker$tridentWeapons$allowFireAspectKnockbackLooting(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
-        boolean isTrident = stack.getItem() instanceof TridentItem;
-        if (!isTrident) return;
+    @ModifyReturnValue(
+        method = "canAccept",
+        at = @At("RETURN")
+    )
+    private boolean enchanttweaker$tridentWeapons$modifyAccept(boolean orig, RegistryEntry<Enchantment> other) {
+        return other.getKeyOrValue().map(
+            key -> {
+                String path = key.getValue().getPath();
 
-        Enchantment enchantment = (Enchantment) (Object) this;
-        if (enchantment instanceof DamageEnchantment ||
-            enchantment == Enchantments.FIRE_ASPECT ||
-            enchantment == Enchantments.KNOCKBACK ||
-            enchantment == Enchantments.LOOTING) {
-            cir.setReturnValue(true);
-        }
+                if (path.equals("sharpness") || path.equals("smite") || path.equals("fire_aspect") ||
+                    path.equals("knockback") || path.equals("looting")) {
+                    return false;
+                }
+                return orig;
+            },
+            value -> orig
+        );
     }
 }

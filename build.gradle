@@ -1,12 +1,13 @@
 plugins {
     id 'maven-publish'
-	id 'fabric-loom' version '1.6-SNAPSHOT'
+    id 'fabric-loom' version '1.15.0-alpha.6'
     id "com.modrinth.minotaur" version "2.+"
 }
 
 // Name jar with supported MC versions
 String supportedVersions = project.minecraft_version
 List<String> supportedVersionsArray = [project.minecraft_version]
+
 if (project.minecraft_version == "1.19.2") {
     supportedVersions = "1.19-1.19.2"
     supportedVersionsArray = ["1.19", "1.19.1", "1.19.2"]
@@ -16,6 +17,10 @@ if (project.minecraft_version == "1.19.2") {
 } else if (project.minecraft_version == "1.20.3") {
     supportedVersions = "1.20.3-1.20.4"
     supportedVersionsArray = ["1.20.3", "1.20.4"]
+} else if (project.minecraft_version.startsWith("1.21")) {
+    supportedVersions = "1.21.x"
+    supportedVersionsArray = ["1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5",
+                              "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11"]
 }
 
 version = "${project.mod_version}+mc${supportedVersions}"
@@ -36,8 +41,8 @@ repositories {
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }
 
@@ -50,7 +55,7 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release.set(17)
+	it.options.release.set(21)
 	it.options.encoding = "UTF-8"
 }
 
@@ -60,8 +65,8 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_17
-	targetCompatibility = JavaVersion.VERSION_17
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 jar {
@@ -88,19 +93,19 @@ publishing {
 	}
 }
 
-modrinth {
-    debugMode = true
-    token = System.getenv("MODRINTH_TOKEN") ?: ""
-    projectId = "e4Vpm1dD"
-    versionName = "Enchant Tweaker ${project.mod_version}+mc${supportedVersions}"
-    versionNumber = "${project.mod_version}+mc${supportedVersions}"
-    gameVersions = supportedVersionsArray
-    changelog = new File("VERSION_CHANGES.md").text
-    versionType = "release"
-    uploadFile = remapJar
-    additionalFiles = [sourcesJar]
-    loaders = ["fabric", "quilt"]
-    dependencies {
-        required.project "fabric-api"
-    }
-}
+//modrinth {
+//    debugMode = true
+//    token = System.getenv("MODRINTH_TOKEN") ?: ""
+//    projectId = "e4Vpm1dD"
+//    versionName = "Enchant Tweaker ${project.mod_version}+mc${supportedVersions}"
+//    versionNumber = "${project.mod_version}+mc${supportedVersions}"
+//    gameVersions = supportedVersionsArray
+//    changelog = new File("VERSION_CHANGES.md").text
+//    versionType = "release"
+//    uploadFile = remapJar
+//    additionalFiles = [sourcesJar]
+//    loaders = ["fabric", "quilt"]
+//    dependencies {
+//        required.project "fabric-api"
+//    }
+//}

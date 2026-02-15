@@ -37,7 +37,7 @@ public class ADUtils {
      */
     public static void broadcastOps(MinecraftServer server, MutableText msg) {
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            if (server.getPlayerManager().isOperator(player.getGameProfile())) {
+            if (server.getPlayerManager().isOperator(player.getPlayerConfigEntry())) {
                 player.sendMessage(msg);
             }
         }

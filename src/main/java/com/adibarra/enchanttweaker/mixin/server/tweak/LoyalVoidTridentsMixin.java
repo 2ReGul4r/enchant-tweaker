@@ -25,21 +25,20 @@ public abstract class LoyalVoidTridentsMixin extends ProjectileEntity {
     @Shadow
     private boolean dealtDamage;
 
-    // VERSION CHANGES:
-    // 1.16+: ProjectileEntity
-    // 1.19.4+: PersistentProjectileEntity
-    // 1.20.3+: ProjectileEntity
-    @SuppressWarnings("unused")
-    protected LoyalVoidTridentsMixin(EntityType<ProjectileEntity> entityType, World world) {
+    @Shadow
+    public abstract World getWorld();
+
+    protected LoyalVoidTridentsMixin(EntityType<? extends ProjectileEntity> entityType, World world) {
         super(entityType, world);
     }
 
     @Inject(
-        method="tick()V",
+        method="tick",
         at=@At("HEAD"))
     private void enchanttweaker$loyalVoidTridents$returnFromVoid(CallbackInfo ci) {
-        if (dataTracker.get(LOYALTY) == 0 || this.dealtDamage) return;
+        if (this.dataTracker.get(LOYALTY) == 0 || this.dealtDamage) return;
 
+        // In 1.21.11 use the shadow-method getWorld()
         if (this.getY() <= this.getWorld().getBottomY()) {
             this.dealtDamage = true;
             this.setVelocity(0, 0, 0);

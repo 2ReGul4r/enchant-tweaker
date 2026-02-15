@@ -18,7 +18,9 @@
   },
   "mixins": ["enchanttweaker.mixins.json"],
   "depends": {
-    "fabricloader": ">=0.15.0",
-    "java": ">=17"
+    "fabricloader": ">=0.18.4",
+    "minecraft": ">=1.21",
+    "fabric": "*",
+    "java": ">=21"
   }
 }

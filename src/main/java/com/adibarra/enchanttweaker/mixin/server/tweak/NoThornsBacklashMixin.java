@@ -1,22 +1,34 @@
 package com.adibarra.enchanttweaker.mixin.server.tweak;
 
-import net.minecraft.enchantment.ThornsEnchantment;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.Constant;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 
-/**
- * @description Disable Thorns enchant armor self-damage backlash.
- * @environment Server
- */
-@Mixin(value=ThornsEnchantment.class)
+@Mixin(Enchantment.class)
 public abstract class NoThornsBacklashMixin {
 
-    @SuppressWarnings("SameReturnValue")
-    @ModifyConstant(
-        method="onUserDamaged(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/entity/Entity;I)V",
-        constant=@Constant(intValue=2))
-    private int enchanttweaker$noThornsBacklash$noBacklash(int orig) {
-        return 0;
+    @Shadow @Final
+    private Text description;
+
+    @ModifyReturnValue(
+        method = "getMaxLevel",
+        at = @At("RETURN")
+    )
+    private int enchanttweaker$noThornsBacklash$modifyMaxLevel(int orig) {
+        if (this.description.getContent() instanceof TranslatableTextContent translatable) {
+            String translationKey = translatable.getKey();
+            String key = translationKey.substring(translationKey.lastIndexOf('.') + 1);
+
+            if (key.equals("thorns")) {
+                return 1;
+            }
+        }
+
+        return orig;
     }
 }

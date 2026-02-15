@@ -1,11 +1,14 @@
 package com.adibarra.enchanttweaker.mixin.server.enhanced;
 
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.CrossbowItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
@@ -17,9 +20,7 @@ import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,47 +30,41 @@ import java.util.List;
 @Mixin(value=CrossbowItem.class)
 public abstract class MoreMultishotMixin {
 
-    @SuppressWarnings("EmptyMethod")
     @Shadow
-    private static void shoot(World world, LivingEntity shooter, Hand hand, ItemStack crossbow, ItemStack projectile, float soundPitch, boolean creative, float speed, float divergence, float simulated) { /* dummy */ }
+    private static void shoot(World world, LivingEntity shooter, Hand hand, ItemStack crossbow, ItemStack projectile, float soundPitch, boolean creative, float speed, float divergence, float simulated) { }
 
-    @SuppressWarnings("EmptyMethod")
     @Shadow
-    private static void postShoot(World world, LivingEntity entity, ItemStack stack) { /* dummy */ }
+    private static void postShoot(World world, LivingEntity entity, ItemStack stack) { }
 
-    @SuppressWarnings("EmptyMethod")
     @Shadow
-    private static List<ItemStack> getProjectiles(ItemStack stack) { return new ArrayList<>(0); }
+    private static List<ItemStack> getProjectiles(ItemStack stack) { return List.of(); }
 
-    @SuppressWarnings("EmptyMethod")
     @Shadow
     private static float[] getSoundPitches(Random random) { return new float[0]; }
 
     @Unique
     private static int multishotLevel = 0;
 
-    @Inject(
-        method="loadProjectiles(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/item/ItemStack;)Z",
-        at=@At("HEAD"))
-    private static void enchanttweaker$moreMultishot$captureMultishotLevel(LivingEntity shooter, ItemStack projectile, CallbackInfoReturnable<Boolean> cir) {
-        multishotLevel = EnchantmentHelper.getLevel(Enchantments.MULTISHOT, projectile);
-    }
-
     @ModifyConstant(
-        method="loadProjectiles(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/item/ItemStack;)Z",
+        method="loadProjectiles",
         constant=@Constant(intValue=3))
-    private static int enchanttweaker$moreMultishot$modifyNumProjectiles(int orig) {
+    private static int enchanttweaker$moreMultishot$modifyNumProjectiles(int orig, LivingEntity shooter, ItemStack stack) {
+        RegistryEntry<Enchantment> multishot = shooter.getRegistryManager()
+            .getOrThrow(RegistryKeys.ENCHANTMENT)
+            .getOrThrow(Enchantments.MULTISHOT);
+
+        multishotLevel = EnchantmentHelper.getLevel(multishot, stack);
         return multishotLevel * 2 + 1;
     }
 
     @Inject(
-        method="shootAll(Lnet/minecraft/world/World;Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/util/Hand;Lnet/minecraft/item/ItemStack;FF)V",
+        method="shootAll",
         at=@At(
             ordinal=0,
-            value="INVOKE_ASSIGN",
+            value="INVOKE",
             target="Lnet/minecraft/item/CrossbowItem;getSoundPitches(Lnet/minecraft/util/math/random/Random;)[F"),
         cancellable=true)
-    private static void enchanttweaker$moreMultishot$modifyShootAll(World world, LivingEntity entity, Hand hand, ItemStack stack, float speed, float divergence, CallbackInfo ci) {
+    private static void enchanttweaker$moreMultishot$modifyShootAll(World world, LivingEntity entity, Hand hand, ItemStack stack, float speed, float divergence, LivingEntity shooter, CallbackInfo ci) {
         List<ItemStack> list = getProjectiles(stack);
         float[] fs = getSoundPitches(entity.getRandom());
         float range = Math.max(10.0F, list.size() * 0.2F);
@@ -79,11 +74,11 @@ public abstract class MoreMultishotMixin {
             boolean bl = entity instanceof PlayerEntity && ((PlayerEntity) entity).getAbilities().creativeMode;
             if (!itemStack.isEmpty()) {
                 if (i == 0) {
-                    shoot(world, entity, hand, stack, itemStack, fs[i], bl, speed, divergence, 0.0F);
-                } else if (i % 2 != 0) {
-                    shoot(world, entity, hand, stack, itemStack, fs[1], bl, speed, divergence, -range * (i / (float) list.size() / 2F));
+                    shoot(world, entity, hand, stack, itemStack, fs[0], bl, speed, divergence, 0.0F);
                 } else {
-                    shoot(world, entity, hand, stack, itemStack, fs[2], bl, speed, divergence, range * (i / (float) list.size() / 2F));
+                    float angle = (i % 2 != 0) ? -range * ((i + 1) / 2f / list.size()) : range * (i / 2f / list.size());
+                    float pitch = (i < fs.length) ? fs[i] : fs[i % 3];
+                    shoot(world, entity, hand, stack, itemStack, pitch, bl, speed, divergence, angle);
                 }
             }
         }

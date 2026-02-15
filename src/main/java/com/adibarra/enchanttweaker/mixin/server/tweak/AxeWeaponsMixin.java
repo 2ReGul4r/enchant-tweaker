@@ -1,10 +1,13 @@
 package com.adibarra.enchanttweaker.mixin.server.tweak;
 
 import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.AxeItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -16,19 +19,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value=Enchantment.class)
 public abstract class AxeWeaponsMixin {
 
+    @Shadow @Final
+    private Text description;
+
     @Inject(
-        method="isAcceptableItem(Lnet/minecraft/item/ItemStack;)Z",
+        method="isAcceptableItem",
         at=@At("HEAD"),
         cancellable=true)
     private void enchanttweaker$axeWeapons$allowFireAspectKnockbackLooting(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
-        boolean isAxe = stack.getItem() instanceof AxeItem;
-        if (!isAxe) return;
+        if (!(stack.getItem() instanceof AxeItem)) return;
 
-        Enchantment enchantment = (Enchantment) (Object) this;
-        if (enchantment == Enchantments.FIRE_ASPECT ||
-            enchantment == Enchantments.KNOCKBACK ||
-            enchantment == Enchantments.LOOTING) {
-            cir.setReturnValue(true);
+        if (this.description.getContent() instanceof TranslatableTextContent translatable) {
+            String key = translatable.getKey();
+
+            // Check for the specific enchantment paths in 1.21.11
+            if (key.endsWith(".fire_aspect") ||
+                key.endsWith(".knockback") ||
+                key.endsWith(".looting")) {
+                cir.setReturnValue(true);
+            }
         }
     }
 }

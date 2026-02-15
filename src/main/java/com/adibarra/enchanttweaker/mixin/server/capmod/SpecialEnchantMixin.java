@@ -2,38 +2,50 @@ package com.adibarra.enchanttweaker.mixin.server.capmod;
 
 import com.adibarra.enchanttweaker.ETMixinPlugin;
 import com.adibarra.utils.ADMath;
-import net.minecraft.enchantment.*;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.registry.Registries;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+
+import java.util.Set;
 
 /**
- * @description Modify enchantment level cap. (Special cases, not all enchantments override getMaxLevel())
+ * @description Modify special enchantment level cap (Flame, Infinity, Mending, etc.)
  * @environment Server
  */
-@Mixin(value={
-    AquaAffinityEnchantment.class, BindingCurseEnchantment.class, ChannelingEnchantment.class,
-    FlameEnchantment.class,        InfinityEnchantment.class,     MendingEnchantment.class,
-    MultishotEnchantment.class,    SilkTouchEnchantment.class,    VanishingCurseEnchantment.class
-})
-public abstract class SpecialEnchantMixin extends Enchantment {
+@Mixin(Enchantment.class)
+public abstract class SpecialEnchantMixin {
 
-    @SuppressWarnings("unused")
-    protected SpecialEnchantMixin(Rarity weight, EnchantmentTarget target, EquipmentSlot[] slotTypes) {
-        super(weight, target, slotTypes);
-    }
+    @Shadow @Final
+    private Text description;
 
-    // VERSION CHANGES:
-    // 1.16+: Registry
-    // 1.19.3+: Registries
-    @Override
-    public int getMaxLevel() {
-        int orig = super.getMaxLevel();
-        if (Registries.ENCHANTMENT.getKey(this).isEmpty()) return orig;
+    private static final Set<String> SPECIAL_ENCHANTS = Set.of(
+        "flame", "infinity", "mending", "multishot", "silk_touch",
+        "vanishing_curse", "aqua_affinity", "binding_curse", "channeling"
+    );
 
-        String key = Registries.ENCHANTMENT.getKey(this).get().getValue().getPath();
-        int lvlCap = ETMixinPlugin.getConfig().getOrDefault(key, orig);
-        if (lvlCap < 0) return orig;
-        return ADMath.clamp(lvlCap, 0, 255);
+    @ModifyReturnValue(
+        method = "getMaxLevel",
+        at = @At("RETURN")
+    )
+    private int enchanttweaker$modifySpecialMaxLevel(int orig) {
+        if (this.description.getContent() instanceof TranslatableTextContent translatable) {
+            String translationKey = translatable.getKey();
+            String key = translationKey.substring(translationKey.lastIndexOf('.') + 1);
+
+            if (!SPECIAL_ENCHANTS.contains(key)) {
+                return orig;
+            }
+
+            int lvlCap = ETMixinPlugin.getConfig().getOrDefault(key, orig);
+            if (lvlCap < 0) return orig;
+            return ADMath.clamp(lvlCap, 0, 255);
+        }
+
+        return orig;
     }
 }

@@ -1,30 +1,35 @@
 package com.adibarra.enchanttweaker.mixin.server.tweak;
 
-import net.minecraft.enchantment.*;
-import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 
-/**
- * @description Allow Multishot and Piercing enchantments to co-exist.
- * @environment Server
- */
-@Mixin(value={
-    MultishotEnchantment.class, PiercingEnchantment.class
-})
-public abstract class MultishotPiercingMixin extends Enchantment {
+@Mixin(Enchantment.class)
+public abstract class MultishotPiercingMixin {
 
-    protected MultishotPiercingMixin(Rarity rarity, EnchantmentTarget target, EquipmentSlot[] slotTypes) {
-        super(rarity, target, slotTypes);
-    }
+    @Shadow @Final
+    private Text description;
 
-    @Inject(
-        method="canAccept(Lnet/minecraft/enchantment/Enchantment;)Z",
-        at=@At("HEAD"),
-        cancellable=true)
-    private void enchanttweaker$multishotPiercing$allowCoexist(Enchantment other, CallbackInfoReturnable<Boolean> cir) {
-        cir.setReturnValue(super.canAccept(other));
+    @ModifyReturnValue(
+        method = "canAccept",
+        at = @At("RETURN")
+    )
+    private boolean enchanttweaker$multishotPiercing$modifyCanAccept(boolean orig, RegistryEntry<Enchantment> other) {
+        if (this.description.getContent() instanceof TranslatableTextContent translatable) {
+            String translationKey = translatable.getKey();
+            String key = translationKey.substring(translationKey.lastIndexOf('.') + 1);
+
+            if (key.equals("multishot") || key.equals("piercing")) {
+                return true;
+            }
+        }
+
+        return orig;
     }
 }

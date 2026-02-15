@@ -4,38 +4,38 @@ import com.adibarra.enchanttweaker.ETMixinPlugin;
 import com.adibarra.utils.ADMath;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentTarget;
-import net.minecraft.enchantment.LuckEnchantment;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.registry.Registries;
+import net.minecraft.text.TranslatableTextContent;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+
+import net.minecraft.text.Text;
 
 /**
  * @description Modify enchantment level cap.
- * @note LuckEnchantment is used by: Looting, Fortune, and Luck of the Sea
  * @environment Server
  */
-@Mixin(value=LuckEnchantment.class)
-public abstract class LuckEnchantMixin extends Enchantment {
+@Mixin(Enchantment.class)
+public abstract class LuckEnchantMixin {
 
-    @SuppressWarnings("unused")
-    protected LuckEnchantMixin(Rarity weight, EnchantmentTarget type, EquipmentSlot[] slotTypes) {
-        super(weight, type, slotTypes);
-    }
+    @Shadow @Final
+    private Text description;
 
-    // VERSION CHANGES:
-    // 1.16+: Registry
-    // 1.19.3+: Registries
     @ModifyReturnValue(
-        method="getMaxLevel()I",
-        at=@At("RETURN"))
-    private int enchanttweaker$luckEnchant$modifyMaxLevel(int orig) {
-        if (Registries.ENCHANTMENT.getKey(this).isEmpty()) return orig;
+        method = "getMaxLevel",
+        at = @At("RETURN")
+    )
+    private int enchanttweaker$modifyMaxLevel(int orig) {
+        if (this.description.getContent() instanceof TranslatableTextContent translatable) {
+            String translationKey = translatable.getKey();
+            String key = translationKey.substring(translationKey.lastIndexOf('.') + 1);
 
-        String key = Registries.ENCHANTMENT.getKey(this).get().getValue().getPath();
-        int lvlCap = ETMixinPlugin.getConfig().getOrDefault(key, orig);
-        if (lvlCap < 0) return orig;
-        return ADMath.clamp(lvlCap, 0, 255);
+            int lvlCap = ETMixinPlugin.getConfig().getOrDefault(key, orig);
+            if (lvlCap < 0) return orig;
+            return ADMath.clamp(lvlCap, 0, 255);
+        }
+
+        return orig;
     }
 }

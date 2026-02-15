@@ -1,18 +1,22 @@
 package com.adibarra.enchanttweaker.mixin.server.tweak;
 
 import com.adibarra.utils.ADUtils;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -36,20 +40,32 @@ public abstract class BetterMendingMixin {
     protected abstract int repairPlayerGears(PlayerEntity player, int amount);
 
     @Inject(
-        method="repairPlayerGears(Lnet/minecraft/entity/player/PlayerEntity;I)I",
+        method="repairPlayerGears",
         at=@At("HEAD"),
         cancellable=true)
     private void enchanttweaker$betterMending$modifyRepairPlayerGears(PlayerEntity player, int amount, CallbackInfoReturnable<Integer> cir) {
         PlayerInventory inv = player.getInventory();
+
+        RegistryEntry<Enchantment> mending = player.getRegistryManager()
+            .getOrThrow(RegistryKeys.ENCHANTMENT)
+            .getOrThrow(Enchantments.MENDING);
+
+        // Manually build lists to bypass private field access in 1.21.11
+        List<ItemStack> armorList = new ArrayList<>();
+        for (int i = 0; i < 4; i++) armorList.add(inv.getStack(36 + i));
+
+        List<ItemStack> mainList = new ArrayList<>();
+        for (int i = 0; i < 36; i++) mainList.add(inv.getStack(i));
+
         ItemStack repairItem = ADUtils.getMatchingItem(
             List.of(
-                new ADUtils.Inventory(inv.getMainHandStack()),
-                new ADUtils.Inventory(inv.offHand),
-                new ADUtils.Inventory(inv.armor),
+                new ADUtils.Inventory(player.getMainHandStack()),
+                new ADUtils.Inventory(player.getOffHandStack()),
+                new ADUtils.Inventory(armorList),
                 ADUtils.getPlayerHotbar(player),
-                new ADUtils.Inventory(inv.main)
+                new ADUtils.Inventory(mainList)
             ),
-            (stack) -> EnchantmentHelper.getLevel(Enchantments.MENDING, stack) > 0 && stack.isDamaged()
+            (stack) -> EnchantmentHelper.getLevel(mending, stack) > 0 && stack.isDamaged()
         );
 
         if (repairItem == null) {

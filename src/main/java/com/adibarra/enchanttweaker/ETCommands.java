@@ -8,10 +8,12 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.CommandNode;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.command.permission.PermissionLevel;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.command.permission.Permission;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -49,7 +51,7 @@ public class ETCommands {
         CommandRegistrationCallback.EVENT.register((commandDispatcher, registryAccess, environment) -> {
             // Build base node
             CommandNode<ServerCommandSource> baseNode = CommandManager.literal(BASE_CMD)
-                .requires(source -> source.hasPermissionLevel(2))
+                .requires(source -> source.getPermissions().hasPermission(new Permission.Level(PermissionLevel.ADMINS)))
                 .executes(new BaseCommand())
                 .build();
 
